@@ -3,7 +3,7 @@ obu:
 	@./bin/obu
 
 receiver:
-	@go build -o bin/receiver data-receiver/main.go
+	@go build -o bin/receiver ./data-receiver
 	@./bin/receiver	
 
 # if you get error -> make: `obu' is up to date.
