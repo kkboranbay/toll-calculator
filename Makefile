@@ -10,6 +10,10 @@ calculator:
 	@go build -o bin/calculator ./distance-calculator
 	@./bin/calculator	
 
+agg:
+	@go build -o bin/agg ./aggregator
+	@./bin/agg	
+
 # if you get error -> make: `obu' is up to date.
 .PHONY: obu
 # Using .PHONY is a way to avoid conflicts and confusion 

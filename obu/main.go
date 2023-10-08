@@ -11,7 +11,7 @@ import (
 	"github.com/kkboranbay/toll-calculator/types"
 )
 
-var SendInterval = time.Second
+var SendInterval = time.Second * 5
 var wsEndpint = "ws://127.0.0.1:30000/ws"
 
 func getLatLong() (float64, float64) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kkboranbay/toll-calculator/types"
@@ -60,7 +59,6 @@ func (c *KafkaConsumer) readMessageLoop() {
 			logrus.Errorf("calculation errors %s", err)
 			continue
 		}
-
-		fmt.Printf("distance %.2f\n", distance)
+		_ = distance
 	}
 }
