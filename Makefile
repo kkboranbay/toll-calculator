@@ -14,6 +14,9 @@ agg:
 	@go build -o bin/agg ./aggregator
 	@./bin/agg	
 
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative types/ptypes.proto
+
 # if you get error -> make: `obu' is up to date.
 .PHONY: obu
 # Using .PHONY is a way to avoid conflicts and confusion 

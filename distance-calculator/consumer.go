@@ -14,10 +14,10 @@ type KafkaConsumer struct {
 	consumer    *kafka.Consumer
 	isRunning   bool
 	calcService CalculatorServicer
-	aggrClient  *client.Client
+	aggrClient  *client.HttpClient
 }
 
-func NewKafkaConsumer(topic string, srv CalculatorServicer, aggrClient *client.Client) (*KafkaConsumer, error) {
+func NewKafkaConsumer(topic string, srv CalculatorServicer, aggrClient *client.HttpClient) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost",
 		"group.id":          "myGroup",
