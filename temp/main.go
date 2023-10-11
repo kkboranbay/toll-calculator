@@ -21,7 +21,7 @@ func main() {
 		Unix:  time.Now().UnixNano(),
 	}
 
-	if _, err := c.Aggregate(context.Background(), req); err != nil {
+	if err := c.Aggregate(context.Background(), req); err != nil {
 		log.Fatal(err)
 	}
 }

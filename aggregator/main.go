@@ -70,6 +70,8 @@ func handleAggregate(srv Aggregator) http.HandlerFunc {
 			return
 		}
 
+		fmt.Printf("%+v", distance)
+
 		if err := srv.AggregateDistance(distance); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
