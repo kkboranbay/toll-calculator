@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -21,8 +22,21 @@ func main() {
 	store := NewMemoryStore()
 	srv := NewInvoiceAggregator(store)
 	srv = NewLogMiddleware(srv)
-	go makeGRPCTransport(*grpcListenAddr, srv)
-	makeHTTPTransport(*httpListenAddr, srv)
+
+	go func() {
+		// If makeGRPCTransport returns an error, log.Fatal will log the error message and then
+		// exit the program with a non-zero exit code. This is a common practice in Go to
+		//handle situations where an error should result in the immediate termination
+		//of the program, ensuring that the program doesn't continue running in
+		//an inconsistent or erroneous state.
+		// If the makeGRPCTransport function does not return an error
+		// (i.e., it runs successfully without errors), then the log.Fatal function
+		// will not be called, and the program will continue executing after that line.
+		// In this case, the program will proceed to execute the next line of code, which is:
+		// makeHTTPTransport
+		log.Fatal(makeGRPCTransport(*grpcListenAddr, srv))
+	}()
+	log.Fatal(makeHTTPTransport(*httpListenAddr, srv))
 }
 
 func makeGRPCTransport(listenAddr string, srv Aggregator) error {
@@ -34,18 +48,18 @@ func makeGRPCTransport(listenAddr string, srv Aggregator) error {
 	}
 	defer lis.Close()
 
-	// Make a new GRPC native server with (options)
+	// Make a new GRPC native server
 	server := grpc.NewServer()
 	// Register (OUR) GRPC server implementation to the GRPC package.
 	types.RegisterAggregatorServer(server, NewGRPCServer(srv))
 	return server.Serve(lis)
 }
 
-func makeHTTPTransport(listenAddr string, srv Aggregator) {
+func makeHTTPTransport(listenAddr string, srv Aggregator) error {
 	fmt.Println("HTTP Transport running on port ", listenAddr)
 	http.HandleFunc("/aggregate", handleAggregate(srv))
 	http.HandleFunc("/invoice", handleGetInvoice(srv))
-	http.ListenAndServe(listenAddr, nil)
+	return http.ListenAndServe(listenAddr, nil)
 }
 
 func handleAggregate(srv Aggregator) http.HandlerFunc {
