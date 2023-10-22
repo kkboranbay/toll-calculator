@@ -7,7 +7,7 @@ import (
 )
 
 const kafkaTopic = "obudata"
-const aggregatorEndpoint = "http://127.0.0.1:3000/aggregate"
+const aggregatorEndpoint = "http://127.0.0.1:3000"
 
 // Transport could be HTTP, GRPC, Kafka -> attach business logic to this transport
 
