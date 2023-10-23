@@ -72,7 +72,7 @@ func (l *MetricsMiddleware) AggregateDistance(distance types.Distance) (err erro
 		l.reqCounterAgg.Inc()
 
 		if err != nil {
-			l.reqErrCounterAgg.Inc()
+			l.errCounterAgg.Inc()
 		}
 	}(time.Now())
 
@@ -86,7 +86,7 @@ func (l *MetricsMiddleware) CalculateInvoice(obuID int) (invoice *types.Invoice,
 		l.reqCounterCalc.Inc()
 
 		if err != nil {
-			l.reqErrCounterCalc.Inc()
+			l.errCounterCalc.Inc()
 		}
 	}(time.Now())
 

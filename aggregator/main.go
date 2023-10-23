@@ -2,43 +2,34 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/joho/godotenv"
 	"github.com/kkboranbay/toll-calculator/types"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	httpListenAddr := flag.String("httpAddr", ":3000", "the listen address of the HTTP server")
-	grpcListenAddr := flag.String("grpcAddr", ":3001", "the listen address of the GRPC server")
-
-	flag.Parse()
-
-	store := NewMemoryStore()
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+	store := makeStore()
 	srv := NewInvoiceAggregator(store)
 	srv = NewMetricsMiddleware(srv)
 	srv = NewLogMiddleware(srv)
+	grpcListenAddr := os.Getenv("AGG_GRPC_PORT")
+	httpListenAddr := os.Getenv("AGG_HTTP_PORT")
 
 	go func() {
-		// If makeGRPCTransport returns an error, log.Fatal will log the error message and then
-		// exit the program with a non-zero exit code. This is a common practice in Go to
-		//handle situations where an error should result in the immediate termination
-		//of the program, ensuring that the program doesn't continue running in
-		//an inconsistent or erroneous state.
-		// If the makeGRPCTransport function does not return an error
-		// (i.e., it runs successfully without errors), then the log.Fatal function
-		// will not be called, and the program will continue executing after that line.
-		// In this case, the program will proceed to execute the next line of code, which is:
-		// makeHTTPTransport
-		log.Fatal(makeGRPCTransport(*grpcListenAddr, srv))
+		log.Fatal(makeGRPCTransport(grpcListenAddr, srv))
 	}()
-	log.Fatal(makeHTTPTransport(*httpListenAddr, srv))
+	log.Fatal(makeHTTPTransport(httpListenAddr, srv))
 }
 
 func makeGRPCTransport(listenAddr string, srv Aggregator) error {
@@ -109,4 +100,15 @@ func writeJSON(w http.ResponseWriter, status int, v any) error {
 	w.WriteHeader(status)
 	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
+}
+
+func makeStore() Storer {
+	storeType := os.Getenv("AGG_STORE_TYPE")
+	switch storeType {
+	case "memory":
+		return NewMemoryStore()
+	default:
+		log.Fatalf("invalid store type given %s", storeType)
+		return nil
+	}
 }
