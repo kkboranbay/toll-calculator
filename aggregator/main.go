@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/joho/godotenv"
 	"github.com/kkboranbay/toll-calculator/types"
@@ -50,56 +49,14 @@ func makeGRPCTransport(listenAddr string, srv Aggregator) error {
 
 func makeHTTPTransport(listenAddr string, srv Aggregator) error {
 	fmt.Println("HTTP Transport running on port ", listenAddr)
-	http.HandleFunc("/aggregate", handleAggregate(srv))
-	http.HandleFunc("/invoice", handleGetInvoice(srv))
+
+	aggMetricHandler := NewHttpMetricHandler("aggregate")
+	invMetricHandler := NewHttpMetricHandler("invoice")
+
+	http.HandleFunc("/aggregate", aggMetricHandler.instrument(handleAggregate(srv)))
+	http.HandleFunc("/invoice", invMetricHandler.instrument(handleGetInvoice(srv)))
 	http.Handle("/metrics", promhttp.Handler())
 	return http.ListenAndServe(listenAddr, nil)
-}
-
-func handleAggregate(srv Aggregator) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var distance types.Distance
-		if err := json.NewDecoder(r.Body).Decode(&distance); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
-			return
-		}
-
-		fmt.Printf("%+v", distance)
-
-		if err := srv.AggregateDistance(distance); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-	}
-}
-
-func handleGetInvoice(srv Aggregator) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		obuIDParam := r.URL.Query().Get("obu")
-		if obuIDParam == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing OBU parameter"})
-			return
-		}
-		obuID, err := strconv.Atoi(obuIDParam)
-		if err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid OBU parameter"})
-			return
-		}
-
-		inv, err := srv.CalculateInvoice(obuID)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-
-		writeJSON(w, http.StatusOK, inv)
-	}
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) error {
-	w.WriteHeader(status)
-	w.Header().Add("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(v)
 }
 
 func makeStore() Storer {
@@ -111,4 +68,10 @@ func makeStore() Storer {
 		log.Fatalf("invalid store type given %s", storeType)
 		return nil
 	}
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) error {
+	w.WriteHeader(status)
+	w.Header().Add("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
 }
