@@ -50,11 +50,14 @@ func makeGRPCTransport(listenAddr string, srv Aggregator) error {
 func makeHTTPTransport(listenAddr string, srv Aggregator) error {
 	fmt.Println("HTTP Transport running on port ", listenAddr)
 
-	aggMetricHandler := NewHttpMetricHandler("aggregate")
 	invMetricHandler := NewHttpMetricHandler("invoice")
+	invoiceHandler := makeHttpFuncHandler(invMetricHandler.instrument(handleGetInvoice(srv)))
+	http.HandleFunc("/invoice", invoiceHandler)
 
-	http.HandleFunc("/aggregate", aggMetricHandler.instrument(handleAggregate(srv)))
-	http.HandleFunc("/invoice", invMetricHandler.instrument(handleGetInvoice(srv)))
+	aggMetricHandler := NewHttpMetricHandler("aggregate")
+	aggregateHandler := makeHttpFuncHandler(aggMetricHandler.instrument(handleAggregate(srv)))
+	http.HandleFunc("/aggregate", aggregateHandler)
+
 	http.Handle("/metrics", promhttp.Handler())
 	return http.ListenAndServe(listenAddr, nil)
 }
